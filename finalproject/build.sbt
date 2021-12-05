@@ -1,5 +1,25 @@
 lazy val akkaHttpVersion = "10.2.7"
 lazy val akkaVersion    = "2.6.17"
+lazy val swaggerVersion = "2.1.11"
+lazy val jacksonVersion = "2.13.0"
+
+val swaggerDependencies = Seq(
+  "jakarta.ws.rs" % "jakarta.ws.rs-api" % "3.0.0",
+  "com.github.swagger-akka-http" %% "swagger-akka-http" % "2.6.0",
+  "com.github.swagger-akka-http" %% "swagger-scala-module" % "2.5.2",
+  "com.github.swagger-akka-http" %% "swagger-enumeratum-module" % "2.3.0",
+  "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonVersion,
+  "io.swagger.core.v3" % "swagger-jaxrs2-jakarta" % swaggerVersion
+)
+
+/**
+ * Leave out swaggerUIDependencies if you don't want to include the swaggerUI.
+ * See also SwaggerDocService
+ */
+val swaggerUIDependencies = Seq(
+  "org.webjars" % "webjars-locator" % "0.42",
+  "org.webjars" % "swagger-ui" % "3.52.5",
+)
 
 lazy val root = (project in file(".")).
   settings(
@@ -18,5 +38,5 @@ lazy val root = (project in file(".")).
       "com.typesafe.akka" %% "akka-http-testkit"        % akkaHttpVersion % Test,
       "com.typesafe.akka" %% "akka-actor-testkit-typed" % akkaVersion     % Test,
       "org.scalatest"     %% "scalatest"                % "3.1.4"         % Test
-    )
+    ) ++ swaggerDependencies ++ swaggerUIDependencies
   )

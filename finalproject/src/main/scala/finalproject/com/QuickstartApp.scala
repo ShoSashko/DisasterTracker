@@ -4,6 +4,8 @@ import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Route
+import finalproject.com.swagger.SwaggerDocService
+import akka.http.scaladsl.server.Directives._
 
 import scala.util.Failure
 import scala.util.Success
@@ -14,8 +16,7 @@ object QuickstartApp {
   private def startHttpServer(routes: Route)(implicit system: ActorSystem[_]): Unit = {
     // Akka HTTP still needs a classic ActorSystem to start
     import system.executionContext
-
-    val futureBinding = Http().newServerAt("localhost", 8080).bind(routes)
+    val futureBinding = Http().newServerAt("localhost", 8080).bind(routes ~ SwaggerDocService.routes)
     futureBinding.onComplete {
       case Success(binding) =>
         val address = binding.localAddress
