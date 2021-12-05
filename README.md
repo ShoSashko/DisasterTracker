@@ -10,6 +10,7 @@ TBD
 
 # Using the App
 
-http://localhost:8080/api-docs - opens swagger \n
+http://localhost:8080/api-docs - opens swagger 
+
 http://localhost:8080/events  - returns events from NASA EONET (https://eonet.gsfc.nasa.gov/docs/v3#api)
 
