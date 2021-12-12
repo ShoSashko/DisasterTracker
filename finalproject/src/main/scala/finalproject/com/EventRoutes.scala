@@ -12,12 +12,13 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.Uri.Path
 import akka.util.Timeout
 import io.swagger.v3.oas.annotations.enums.ParameterIn
-import io.swagger.v3.oas.annotations.media.{Content, Schema}
+import io.swagger.v3.oas.annotations.media.{Content, ExampleObject, Schema}
+import io.swagger.v3.oas.annotations.parameters.RequestBody
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.{Operation, Parameter}
 import jakarta.ws.rs
 import jakarta.ws.rs.core.MediaType
-import jakarta.ws.rs.{Consumes, GET, POST, Produces}
+import jakarta.ws.rs.{Consumes, FormParam, GET, POST, Produces, QueryParam}
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.{Duration, DurationInt}
@@ -35,20 +36,35 @@ class EventRoutes(eventRegistry: ActorRef[EventRegistry.Command])(implicit val s
   private implicit val timeout = Timeout.durationToTimeout(Duration(20, TimeUnit.SECONDS))
 
   @GET
+  @Consumes(Array(MediaType.APPLICATION_JSON))
   @Produces(Array(MediaType.APPLICATION_JSON))
   @Operation(summary = "Returns NASA events", description = "Return NASA request",
+    parameters = Array(
+      new Parameter(name = "bbox", in = ParameterIn.QUERY, required = false, description = "bounding box",
+        content = Array(new Content(schema = new Schema(implementation = classOf[String]))))
+    ),
     responses = Array(
       new ApiResponse(responseCode = "200", description = "NASA response",
         content = Array(new Content(schema = new Schema(implementation = classOf[NasaEvent])))),
       new ApiResponse(responseCode = "500", description = "Internal server error"))
   )
-  def getEvents(): Future[NasaEvent] =
-    eventRegistry.ask(GetEvents)
+  def getEvents(@Parameter(description = "bounding box", required = false) @QueryParam("bbox") bbox:String): Future[NasaEvent] =
+    eventRegistry.ask(GetEvents( bbox, _))
 
   @POST
   @Consumes(Array(MediaType.APPLICATION_JSON))
   @Produces(Array(MediaType.APPLICATION_JSON))
   @Operation(summary = "Creates Google Calendar events", description = "Creates Google Calendar events",
+    requestBody = new RequestBody(content = Array(new Content(
+      schema = new Schema(implementation = classOf[GoogleEvent]),
+      examples = Array(new ExampleObject(value = """{
+  "start": "2021-12-12T09:00:00-09:01",
+  "end": "2021-12-12T09:05:00-09:10",
+  "location": "Lviv, Ukraine",
+  "description": "Event in Lviv",
+  "bbox": "-129.02,50.73,-58.71,12.89"
+                                                   }"""))
+    ))),
     responses = Array(
       new ApiResponse(responseCode = "200", description = "Google response",
         content = Array(new Content(schema = new Schema(implementation = classOf[ActionPerformed])))),
@@ -64,15 +80,18 @@ class EventRoutes(eventRegistry: ActorRef[EventRegistry.Command])(implicit val s
         pathEnd {
           concat(
             get {
-              complete(getEvents())
-            })
+              parameters("bbox"){
+                (bbox : String) =>
+                  complete(getEvents(bbox))
+              }
+            },
             post{
               entity(as[GoogleEvent]){
                 x => onSuccess(createEvent(x)){ performed =>
                   complete((StatusCodes.Created, performed))
                 }
               }
-            }
+            })
         })
     }
 }
