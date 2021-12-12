@@ -21,6 +21,11 @@ val swaggerUIDependencies = Seq(
   "org.webjars" % "swagger-ui" % "3.52.5",
 )
 
+val googleCalendarDependencies = Seq("com.google.api-client" % "google-api-client" % "1.23.0"
+, "com.google.oauth-client" % "google-oauth-client-jetty" % "1.23.0"
+, "com.google.apis" % "google-api-services-calendar" % "v3-rev20211026-1.32.1")
+resolvers += "google-api-services" at "https://google-api-client-libraries.appspot.com/mavenrepo"
+
 lazy val root = (project in file(".")).
   settings(
     inThisBuild(List(
@@ -34,9 +39,10 @@ lazy val root = (project in file(".")).
       "com.typesafe.akka" %% "akka-actor-typed"         % akkaVersion,
       "com.typesafe.akka" %% "akka-stream"              % akkaVersion,
       "ch.qos.logback"    % "logback-classic"           % "1.2.3",
-
       "com.typesafe.akka" %% "akka-http-testkit"        % akkaHttpVersion % Test,
       "com.typesafe.akka" %% "akka-actor-testkit-typed" % akkaVersion     % Test,
       "org.scalatest"     %% "scalatest"                % "3.1.4"         % Test
-    ) ++ swaggerDependencies ++ swaggerUIDependencies
+
+    ) ++ swaggerDependencies ++ swaggerUIDependencies ++ googleCalendarDependencies
   )
+

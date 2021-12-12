@@ -8,6 +8,7 @@ import finalproject.com.EventRegistry._
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.AskPattern._
+import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.Uri.Path
 import akka.util.Timeout
 import io.swagger.v3.oas.annotations.enums.ParameterIn
@@ -16,7 +17,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.{Operation, Parameter}
 import jakarta.ws.rs
 import jakarta.ws.rs.core.MediaType
-import jakarta.ws.rs.{GET, Produces}
+import jakarta.ws.rs.{Consumes, GET, POST, Produces}
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.{Duration, DurationInt}
@@ -38,11 +39,23 @@ class EventRoutes(eventRegistry: ActorRef[EventRegistry.Command])(implicit val s
   @Operation(summary = "Returns NASA events", description = "Return NASA request",
     responses = Array(
       new ApiResponse(responseCode = "200", description = "NASA response",
-        content = Array(new Content(schema = new Schema(implementation = classOf[Event])))),
+        content = Array(new Content(schema = new Schema(implementation = classOf[NasaEvent])))),
       new ApiResponse(responseCode = "500", description = "Internal server error"))
   )
-  def getEvents(): Future[Event] =
+  def getEvents(): Future[NasaEvent] =
     eventRegistry.ask(GetEvents)
+
+  @POST
+  @Consumes(Array(MediaType.APPLICATION_JSON))
+  @Produces(Array(MediaType.APPLICATION_JSON))
+  @Operation(summary = "Creates Google Calendar events", description = "Creates Google Calendar events",
+    responses = Array(
+      new ApiResponse(responseCode = "200", description = "Google response",
+        content = Array(new Content(schema = new Schema(implementation = classOf[ActionPerformed])))),
+      new ApiResponse(responseCode = "500", description = "Internal server error"))
+  )
+  def createEvent(event: GoogleEvent): Future[ActionPerformed] =
+    eventRegistry.ask(CreateEvent(event, _))
 
   //#all-routes
   val eventsRoutes: Route =
@@ -53,6 +66,13 @@ class EventRoutes(eventRegistry: ActorRef[EventRegistry.Command])(implicit val s
             get {
               complete(getEvents())
             })
+            post{
+              entity(as[GoogleEvent]){
+                x => onSuccess(createEvent(x)){ performed =>
+                  complete((StatusCodes.Created, performed))
+                }
+              }
+            }
         })
     }
 }
