@@ -1,55 +1,59 @@
 package finalproject.com
 
-import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.Route
-
-import scala.concurrent.Future
-import finalproject.com.EventRegistry._
-import akka.actor.typed.ActorRef
-import akka.actor.typed.ActorSystem
+import akka.actor.typed.{ActorRef, ActorSystem}
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.Uri.Path
+import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Route
 import akka.util.Timeout
-import io.swagger.v3.oas.annotations.enums.ParameterIn
+import finalproject.com.EventRegistry._
+import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.{Content, ExampleObject, Schema}
 import io.swagger.v3.oas.annotations.parameters.RequestBody
 import io.swagger.v3.oas.annotations.responses.ApiResponse
-import io.swagger.v3.oas.annotations.{Operation, Parameter}
 import jakarta.ws.rs
 import jakarta.ws.rs.core.MediaType
-import jakarta.ws.rs.{Consumes, FormParam, GET, POST, Produces, QueryParam}
+import jakarta.ws.rs.{Consumes, GET, POST, Produces}
 
 import java.util.concurrent.TimeUnit
-import scala.concurrent.duration.{Duration, DurationInt}
+import scala.concurrent.Future
+import scala.concurrent.duration.Duration
 
 //#import-json-formats
 //#user-routes-class
 @rs.Path("/events")
 class EventRoutes(eventRegistry: ActorRef[EventRegistry.Command])(implicit val system: ActorSystem[_]) {
 
-  //#user-routes-class
   import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
-  //#import-json-formats
 
   // If ask takes more time than this to complete the request is failed
-  private implicit val timeout = Timeout.durationToTimeout(Duration(20, TimeUnit.SECONDS))
+  private implicit val timeout = Timeout.durationToTimeout(Duration(2000, TimeUnit.SECONDS))
 
+  @rs.Path("/google")
+  @GET
+  @Consumes(Array(MediaType.APPLICATION_JSON))
+  @Produces(Array(MediaType.APPLICATION_JSON))
+  @Operation(summary = "Returns Google events", description = "Return Google request",
+    responses = Array(
+      new ApiResponse(responseCode = "200", description = "NASA response",
+        content = Array(new Content(schema = new Schema(implementation = classOf[List[GoogleEvent]])))),
+      new ApiResponse(responseCode = "500", description = "Internal server error"))
+  )
+  def getGoogleEvents(start : String, end: String): Future[List[GoogleEvent]] =
+    eventRegistry.ask(GetFutureGoogleEvents(start,end, _))
+
+  @rs.Path("/nasa")
   @GET
   @Consumes(Array(MediaType.APPLICATION_JSON))
   @Produces(Array(MediaType.APPLICATION_JSON))
   @Operation(summary = "Returns NASA events", description = "Return NASA request",
-    parameters = Array(
-      new Parameter(name = "bbox", in = ParameterIn.QUERY, required = false, description = "bounding box",
-        content = Array(new Content(schema = new Schema(implementation = classOf[String]))))
-    ),
     responses = Array(
       new ApiResponse(responseCode = "200", description = "NASA response",
         content = Array(new Content(schema = new Schema(implementation = classOf[NasaEvent])))),
       new ApiResponse(responseCode = "500", description = "Internal server error"))
   )
-  def getEvents(@Parameter(description = "bounding box", required = false) @QueryParam("bbox") bbox:String): Future[NasaEvent] =
-    eventRegistry.ask(GetEvents( bbox, _))
+  def getEvents(): Future[NasaEvent] =
+    eventRegistry.ask(GetNasaEvents)
 
   @POST
   @Consumes(Array(MediaType.APPLICATION_JSON))
@@ -62,7 +66,8 @@ class EventRoutes(eventRegistry: ActorRef[EventRegistry.Command])(implicit val s
   "end": "2021-12-12T09:05:00-09:10",
   "location": "Lviv, Ukraine",
   "description": "Event in Lviv",
-  "bbox": "-129.02,50.73,-58.71,12.89"
+  "bbox": "-129.02,50.73,-58.71,12.89",
+  "eventId": ""
                                                    }"""))
     ))),
     responses = Array(
@@ -77,21 +82,26 @@ class EventRoutes(eventRegistry: ActorRef[EventRegistry.Command])(implicit val s
   val eventsRoutes: Route =
     pathPrefix("events") {
       concat(
-        pathEnd {
-          concat(
-            get {
-              parameters("bbox"){
-                (bbox : String) =>
-                  complete(getEvents(bbox))
+            pathSuffix("nasa"){
+              get {
+                complete(getEvents())
               }
             },
-            post{
-              entity(as[GoogleEvent]){
-                x => onSuccess(createEvent(x)){ performed =>
-                  complete((StatusCodes.Created, performed))
+            pathSuffix("google"){
+              get {
+                parameters('start.as[String], 'end.as[String]) { (start, end) =>
+                  complete(getGoogleEvents(start, end))
                 }
               }
-            })
-        })
+            },
+            post {
+              entity(as[GoogleEvent]) {
+                x =>
+                  onSuccess(createEvent(x)) { performed =>
+                    complete((StatusCodes.Created, performed))
+                  }
+              }
+            }
+        )
     }
 }

@@ -26,6 +26,7 @@ val googleCalendarDependencies = Seq("com.google.api-client" % "google-api-clien
 , "com.google.apis" % "google-api-services-calendar" % "v3-rev20211026-1.32.1")
 resolvers += "google-api-services" at "https://google-api-client-libraries.appspot.com/mavenrepo"
 
+
 lazy val root = (project in file(".")).
   settings(
     inThisBuild(List(
@@ -41,7 +42,8 @@ lazy val root = (project in file(".")).
       "ch.qos.logback"    % "logback-classic"           % "1.2.3",
       "com.typesafe.akka" %% "akka-http-testkit"        % akkaHttpVersion % Test,
       "com.typesafe.akka" %% "akka-actor-testkit-typed" % akkaVersion     % Test,
-      "org.scalatest"     %% "scalatest"                % "3.1.4"         % Test
+      "org.scalatest"     %% "scalatest"                % "3.1.4"         % Test,
+      "com.github.nscala-time" %% "nscala-time" % "1.8.0"
 
     ) ++ swaggerDependencies ++ swaggerUIDependencies ++ googleCalendarDependencies
   )
