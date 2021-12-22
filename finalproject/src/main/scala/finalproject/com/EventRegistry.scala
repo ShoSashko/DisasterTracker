@@ -117,7 +117,6 @@ object EventRegistry{
     val googleEvent = new Event()
       .setSummary(event.description)
       .setLocation(event.location.get)
-      .setDescription(event.description + " \n Warning notification saying that this place might be unsafe");
 
     if(event.location != None){
       if(Context.hotestPoints.contains(event.location.get)){
@@ -166,7 +165,7 @@ object EventRegistry{
     val endDateTime = new DateTime(format.parse(end));
     val events = service.events.list("primary").setMaxResults(10).setTimeMin(startDateTime).setTimeMax(endDateTime).setOrderBy("startTime").setSingleEvents(true).execute
 
-    val result : List[GoogleEvent] = events.getItems.asScala.map((x : Event) => GoogleEvent(x.getStart.toString, x.getEnd.toString, Option(x.getLocation), x.getSummary, "test", x.getId) ).toList
+    val result : List[GoogleEvent] = events.getItems.asScala.map((x : Event) => GoogleEvent(x.getStart.toString, x.getEnd.toString, Option(x.getLocation), x.getSummary, "", x.getId) ).toList
       result
   }
 
@@ -202,7 +201,7 @@ object EventRegistry{
               }
             }
           }
-            val googleEvents = GetGoogleEvents("2021-12-17", "2021-12-19")
+            val googleEvents = GetGoogleEvents("2021-12-22", "2021-12-23")
 
             for(elem <- googleEvents){
               for(nasaEvent <- sequence.events) {
