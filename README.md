@@ -19,6 +19,7 @@ curl -X 'GET' \
   -H 'accept: application/json'
 ```
 Returns events and runs background job to track events from NASA EONET (https://eonet.gsfc.nasa.gov/docs/v3#api)
+Triggers google calendar authentication
 ```bash
 curl -X 'GET' \
   'http://localhost:8080/events/nasa' \
