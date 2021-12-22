@@ -13,19 +13,20 @@ This program emulates disaster tracker integrated with nasa and google calendar 
 http://localhost:8080/api-docs - opens swagger 
 
 Returns google events for requested dates
-
+```bash
 curl -X 'GET' \
   'http://localhost:8080/events/google?start=2021-12-22&end=2021-12-23' \
   -H 'accept: application/json'
-
+```
 Returns events and runs background job to track events from NASA EONET (https://eonet.gsfc.nasa.gov/docs/v3#api)
-
+```bash
 curl -X 'GET' \
   'http://localhost:8080/events/nasa' \
   -H 'accept: application/json'
-
+```
 Creates google event 
 
+```bash
 curl -X 'POST' \ 
   'http://localhost:8080/events' \
   -H 'accept: application/json' \
@@ -38,3 +39,4 @@ curl -X 'POST' \
   "bbox": "-129.02,50.73,-58.71,12.89",
   "eventId": ""
 }'
+```
